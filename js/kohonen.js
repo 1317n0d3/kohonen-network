@@ -3,63 +3,41 @@ const N = [3],
   Yn = 114;
 let L = N.length,
   Ts = [],
-  secondTs = [],
   classes = [],
-  colors = [
-    "row-cell__green",
-    "row-cell__yellow",
-    "row-cell__maroon",
-    "row-cell__red",
-    "row-cell__snow",
-    "row-cell__purple",
-    "row-cell__blue",
-    "row-cell__lightGreen",
-  ];
+  images = Array(22)
+    .fill(0)
+    .map((value) => new Image());
+images.forEach(
+  (value, index) => (images[index].src = "images/" + (index + 1) + ".png")
+);
+let canvas = document.querySelector("#canvas"),
+  i = 0,
+  context = canvas.getContext("2d");
 
-function cArr(x, y) {
+function cArr() {
   /*
-    Наполнение массива примеров обучающей выборки.
-    Аргумент:
-    x : тип данных (целое число) - количество строк в пространстве
-    y : тип данных (целое число) - количество ячеек в строке
-  */
-  let sumX = 0,
-    sumY = 0,
-    sumZ = 0,
-    step = 2;
+		Наполнение массива примеров обучающей выборки.
+		Аргумент:
+		x : тип данных (целое число) - количество строк в пространстве
+		y : тип данных (целое число) - количество ячеек в строке
+	*/
+  let sum = Array(pixels[0].length).fill(0);
   // Пробегаемся по росту, начиная от 153 см до x с шагом 2
-  for (let height = 153; height < x; height += step) {
-    sumX += height ** 2; //Считаем сумму квадратов по росту
-  }
-  // Пробегаемся по весу, начиная от 153 см до x с шагом 2
-  for (let weight = 45; weight < y; weight += step) {
-    sumY += weight ** 2; //Считаем сумму квадратов по весу
-  }
-  for (let height = 153; height < x; height += step) {
-    for (let weight = 45; weight < y; weight += step) {
-      sumZ += weight / (height / 100) ** 2; //Считаем сумму квадратов по индексу массы тела
-    }
-  }
-  for (let height = 153; height < x; height += step) {
-    for (let weight = 45; weight < y; weight += step) {
-      let ibm = weight / (height / 100) ** 2; //Расчет индекса массы тела
-      Ts.push([
-        height / Math.sqrt(sumX),
-        weight / Math.sqrt(sumY),
-        ibm / Math.sqrt(sumZ),
-      ]); //Формирование обучающего примера
-      secondTs.push([height, weight, ibm]); //Дублирование обучающей выборки без нормализации данных
-    }
-  }
+  pixels.forEach((value, indexValue) =>
+    value.forEach((pixel, indexPixel) => (sum[indexPixel] += pixel ** 2))
+  );
+  pixels.forEach((value, indexValue) => {
+    Ts.push(
+      sum.map(
+        (sumSquare, indexSumSquare) =>
+          value[indexSumSquare] / Math.sqrt(sumSquare)
+      )
+    );
+  });
+  context.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 function rnd(min, max) {
-  /*
-    Функция случайного числа в диапазоне min - max
-    Аргументы:
-    min : тип данных (вещественное) - от какого числа начинается диапазон случайных чисел
-    max : тип данных (вещественное) - каким числом заканчивается диапазон случайных чисел
-  */
   return min + Math.random() * (max - min);
 }
 
@@ -70,12 +48,11 @@ class Neuron {
     w : тип данных (целое число) - количество синапсов у данного нейрона
   */
   constructor(
-    w,
-    a // Инициализация переменных для нейрона
+    w // Инициализация переменных для нейрона
   ) {
     this.w = Array(w)
       .fill(0)
-      .map((value, index) => rnd(0.093, 0.216)); // Инициализируем массив весовых коэффициентов
+      .map((value, index) => rnd(0.05930270274643716, 0.22998692455366165)); // Инициализируем массив весовых коэффициентов
   }
 }
 
@@ -95,7 +72,7 @@ let neurons = Array(N.length)
             neuron,
             indexNeuron // Создаем N[indexLayer] нейронов в слое
           ) => {
-            return new Neuron(indexLayer == 0 ? 3 : N[indexLayer - 1]); // Возвращаем экземпляр класса нового нейрона
+            return new Neuron(indexLayer == 0 ? 262144 : N[indexLayer - 1]); // Возвращаем экземпляр класса нового нейрона
           }
         );
     }
@@ -188,7 +165,7 @@ function belong(x, index, action = 1) {
     // Если классов нет, то создаем пустые списки по количество нуйронов в слое, иначе оставляем как есть
     classes = !classes.length ? neurons[0].map((value) => []) : classes;
     let indexNeuron = neuronWinner(x); // Получаем индекс победившего нейрона
-    classes[indexNeuron].push(secondTs[index][2]); // Добавляем индекс массы тела (не нормализованный) в соответствующий класс
+    classes[indexNeuron].push(images[index]); // Добавляем индекс массы тела (не нормализованный) в соответствующий класс
   } // Иначе
   else {
     classes = neurons[0].map((value) => []); // Очищаем классы
@@ -202,7 +179,7 @@ function amountClasses() {
   Ts.forEach((value, indexValue) => belong(value, indexValue)); // Относим каждое входное воздействие в соответствующий класс
   return classes.map((value) => value.length); // Возвращаем список состоящий из количества элементов в каждом клссе
 }
-function learn(action = 0, a = 0.3, b = 0.001, number = 10) {
+function learn(action = 0, a = 0.3, b = 0.05, number = 10) {
   /*
     Процедру запуска алгоритма обучения нейронной сети
     Аргументы:
@@ -215,6 +192,7 @@ function learn(action = 0, a = 0.3, b = 0.001, number = 10) {
     //Если action не равен нулю
     while (a > 0) {
       // Повторяем пока a больше нуля
+      console.log(a);
       for (
         let i = 1;
         i < number;
@@ -234,79 +212,37 @@ function learn(action = 0, a = 0.3, b = 0.001, number = 10) {
   */
 
   amountClasses(); //Наполняем массив классов
-  let t = document.querySelectorAll(".row"), // Записываем в переменную t все строки таблицы
-    classIndex = 0, // Индекс класс к которому пренадлежит маркируемая ячейка
-    height = 153; // Минимальное значение роста
+  render();
+}
 
-  for (
-    let row = 0;
-    row < t.length;
-    row++ // Перебираем все строки таблицы
-  ) {
-    let weight = 45; // Минимальное значение веса
-    height += 2; // Увеличиваем рост с шагом 2
-    let c = t[row].querySelectorAll(".row-cell"); //Записываем в переменную c все ячейки строки
-    for (
-      let cell = 0;
-      cell < c.length;
-      cell++ // Перебираем все ячейки строки
-    ) {
-      weight += 2; // Увеличиваем  вес с шагом в 2
-      let ibm = weight / (height / 100) ** 2; // Расчитываем индекс массы тела
-      colors.forEach((selector) => c[cell].classList.remove(selector)); //Очищаем все селекторы модификаторы
-      classes.forEach((values, indexClass) =>
-        values.forEach((value, indexValue) => {
-          //Перебираем классы и все элементы в них
-          if (value == ibm) {
-            // Если хоть одно значение в классе совпадает с текущим индексом массы тела
-            classIndex = indexClass; // Тогда присваиваем переменной classIndex индекс данного класса
-          }
-        })
-      );
-      answer(classIndex, row, cell); // Закрашиваем ячейку
-    }
+function render() {
+  document.querySelector(".table").innerHTML = "<table></table>";
+  let th = "";
+  classes.forEach(
+    (value, indexValue) => (th += "<th> Класс №" + indexValue + "</th>")
+  );
+  let first_tr = "<thead><tr>" + th + "</tr></thead><tbody>";
+  document.querySelector(".table table").innerHTML += first_tr;
+  for (let i = 0; i < Ts.length; i++) {
+    let tr = "<tr>",
+      td = "";
+    classes.forEach((value, indexValue) => {
+      let src = value[i] != undefined ? value[i].src : "";
+      td += "<td><img src='" + src + "'></td>";
+    });
+    tr += td + "</tr>";
+    document.querySelector(".table table").innerHTML += tr;
   }
-  google.charts.setOnLoadCallback(drawChart); //Отображаем график
-}
-function answer(index, x, y) {
-  /*
-    Процедура маркирующая ячейки соответствующим цветом в зависимости от класса
-    Аргументы:
-    index : тип данных (вещественный) - индекс класса
-    x     : тип данных (целочисленный) - координата x ячейки
-    y     : тип данных (целочисленный) - координата y ячейки
-  */
-  var Table = document
-    .querySelectorAll(".row")
-    [x].querySelectorAll(".row-cell")[y]; // Получаем ячейку
-  Table.classList.toggle(colors[index]); // Закрашиваем ячейку соответствующим цветом по номеру класса
+  document.querySelector(".table table").innerHTML += "</tbody>";
 }
 
-google.charts.load("current", { packages: ["corechart"] });
-function drawChart() {
-  let results = [["Итерация", "Ответ сети"]],
-    indexTrain = 0;
-  classes.forEach((value, indexValue) =>
-    value.forEach((answer, indexAnswer) => {
-      results.push([indexValue, answer]);
-      indexTrain++;
-    })
-  );
-  var data = google.visualization.arrayToDataTable(results);
-
-  var options = {
-    title: "Результат классификации",
-    hAxis: { title: "Класс" },
-    vAxis: { title: "Индекс массы тела" },
-    legend: "none",
-  };
-
-  var chart = new google.visualization.ScatterChart(
-    document.querySelector(".network-answers")
-  );
-
-  chart.draw(data, options);
-}
+let pixels = [];
 window.onload = () => {
-  cArr(Xn, Yn);
-}; //  Проведение инициализации и наполнения массива обучающей выборки при загрузке страницы
+  pixels = images.map((value) => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(value, 0, 0);
+    let data = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    return data;
+  });
+  cArr();
+};
