@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Классификация изображений</title>
-		<script src="js/kohonen.js" defer></script>
+		<meta charset="utf-8">
+		<title>Classification by self organising map Kohonen</title>
 		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<script defer src="js/SOM.js"></script>
 	</head>
 	<body>
 		<canvas id="canvas" width="256" height="256"></canvas>
 		<div class="table">
 			
 		</div>
+		<button onclick="nn.action()">start</button>
 	</body>
 </html>
